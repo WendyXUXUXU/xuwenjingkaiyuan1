@@ -1,0 +1,453 @@
+#include<iostream.h>
+#include<string.h>
+#include <fstream.h>
+#include<stdlib.h>
+#include<iomanip.h>
+//全局变量(代码表)
+char *Type[]={"行政人员","教师","一般员工","退休人员","返聘人员","临时工"};
+char *Sex[]={"男","女"};
+char *Pos[]={"无","科级","处级","地级"};
+char *TechPos[]={"无","初级","中级","高级"};
+char *Party[]={"群众","中共党员","民主党派"};
+char *Study[]={"小学","初中","高中","大专","大学","硕士","博士"};
+class Date  //日期类
+{
+private:
+  int y,m,d;
+public:
+  friend ostream& operator<<(ostream& os,Date& day);
+  friend istream& operator>>(istream& is,Date& day);
+};
+ostream& operator<<(ostream& os,Date& day)
+{
+  os<<day.y<<"/"<<day.m<<"/"<<day.d;
+  return os;
+}
+istream& operator>>(istream& is,Date& day)
+{
+  is>>day.y>>day.m>>day.d;
+  return is;
+}
+class Person :public Date //人员类
+{
+private:
+  int No;		    //编号
+  int Type;	    //职工分类
+ char Name[20];//姓名
+  int Sex;      //性别
+  int Age;      //年龄
+  Date D1;      //参加工作时间
+  Date D2;      //来院时间
+  int Pos;      //职务
+  int TechPos;  //职称
+  int Party;    //政治面貌
+  int Study;    //学历
+  Person *next;
+public:
+  Person(){next=NULL;}
+  void Print1(); //输出1个职工信息
+  friend istream& operator>>(istream& is,Person &p);//重载">>"，人员信息输入.
+  friend ostream& operator<<(ostream& os,Person *P);
+  friend class College;
+};
+void Person::Print1()  
+{
+	cout<<"编号:"<<setiosflags(ios::left)<<setw(26)<<No<<"姓名:"<<Name<<endl;
+	cout<<"性别:"<<setiosflags(ios::left)<<setw(26)<<::Sex[Sex]<<"年龄:"<<Age<<endl;
+	cout<<"职工类型:"<<setiosflags(ios::left)<<setw(22)<<::Type[Type]<<"职务:"<<::Pos[Pos]<<endl;
+	cout<<"职称:"<<setiosflags(ios::left)<<setw(26)<<::TechPos[TechPos]<<"学历:"<<::Study[Study]<<endl;
+	cout<<"政治面貌:"<<setiosflags(ios::left)<<setw(22)<<::Party[Party]<<"来院时间:"<<D2<<endl;
+	cout<<"参加工作时间:"<<D1<<endl;
+}
+istream& operator>>(istream& is,Person &p)
+{
+  cout<<"编号:";  cin>>p.No;
+  cout<<"职工分类[0-行政人员,1-教师,2-一般员工,3-退休人员,4-返聘人员,5-临时工]:";  
+  cin>>p.Type;
+  cout<<"姓名:";          cin>>p.Name;
+  cout<<"性别[0-男,1-女]:";          cin>>p.Sex;
+  cout<<"年龄:";          cin>>p.Age;
+  cout<<"参加工作时间:";  cin>>p.D1;
+  cout<<"来院时间:";      cin>>p.D2;
+  cout<<"职务[0-无,1-科级,2-处级,3-地级]:"; 
+  cin>>p.Pos;
+  cout<<"职称[0-无,1-初级,2-中级,3-高级]:";          
+  cin>>p.TechPos;
+  cout<<"政治面貌[0-群众,1-中共党员,2-民主党派]:";      cin>>p.Party;
+  cout<<"学历[0-小学,1-初中,2-高中,3-大专,4-大学,5-硕士,6-博士]:";          
+  cin>>p.Study;
+  return is;
+}
+class College//大学类
+{
+private:
+  Person *PL;     //职工链表
+  void Clear();   //清除所有的职工结点(仅保留头结点)
+  int  Find1(int ID,Person **p1,Person **p2); //按编号查找职工结点
+  int Find2(char *name,Person **p1,Person **p2);//按姓名查找职工结点
+public:
+  College();      //构造
+  ~College();     //析构
+  void Add();     //增加职工
+  void find1();   //按编号查询
+  void find2();   //按姓名查询
+  void Delete();  //删除职工
+  void Modify();  //修改职工
+  void Print2();   //输出职工信息
+  void Stat();    //综合统计
+  void Save();    //职工信息存盘
+  void Load();    //职工信息装入
+};
+College::College()  //构造函数(创建1个头结点的链表)
+{
+  Person *p=new Person;
+  p->next=NULL;
+  PL=p;
+  cout<<"自动装入数据...\n";
+  Load();
+}
+College::~College() //析构函数(仅保留1个头结点)
+{
+  Person *p=PL;
+  while(p)  //逐个删除结点，包括头结点
+  {
+    PL=p->next;
+    delete p;
+    p=PL;
+  }
+  PL=0;
+}
+void College::Add()  //增加职工
+{
+  cout<<"\n** 增加职工 **\n";
+  Person *pa=new Person;
+  cin>>*pa;
+  pa->next=0; 
+  Person *p=PL;
+  while(p->next)
+	  p=p->next;
+  p->next=pa;
+  Save();
+}
+void College::Clear() //清除所有的职工结点(仅保留头结点)
+{
+  Person *p=PL->next;
+  while(p)
+  {
+    PL->next=p->next;
+    delete p;
+    p=PL->next;
+  }
+}
+int College::Find2(char *name,Person **p1,Person **p2)   
+{
+  *p1=PL->next;
+  *p2=PL;
+  while(*p1)
+  {
+    if(strcmp((*p1)->Name,name)==0)
+      break;  //找到
+    else 
+    {
+      *p2=*p1;  //继续查找
+      *p1=(*p1)->next;
+    }
+  }
+  return *p1?1:0;
+}
+int College::Find1(int ID,Person **p1,Person **p2)   
+{
+  *p1=PL->next;
+  *p2=PL;
+  while(*p1)
+  {
+    if((*p1)->No==ID)
+      break;  //找到
+    else 
+    {
+      *p2=*p1;  //继续查找
+      *p1=(*p1)->next;
+    }
+  }
+  return *p1?1:0;
+}
+void College::find1()
+{
+	int nid;
+	cout<<"请输入编号:";
+	cin>>nid;
+	Person *p1,*p2;
+	if(!Find1(nid,&p1,&p2))
+	{
+		cout<<"无此编号人员信息";
+		return;
+	}
+	else
+	{   
+		p1->Print1();
+	}
+}
+void College::find2()
+{
+	char  Name[20];
+	cout<<"请输入姓名:";
+	cin>>Name;
+	Person *p1,*p2;
+	if(!Find2(Name,&p1,&p2))
+	{
+		cout<<"无此人信息";
+		return;
+	}
+	else
+	{
+		p1->Print1();
+	}
+}
+void College::Delete()   //删除职工
+{
+  cout<<"\n** 删除职工 **\n";
+  int No;
+  Person *p1,*p2;
+  cout<<"编号:";  cin>>No;
+  if(!Find1(No,&p1,&p2))
+  {
+    cout<<"指定的人员没有找到!\n";
+  }
+  else
+  {
+    p2->next=p1->next;  //连接
+    delete p1;
+    cout<<"正确删除!\n";
+  }
+}
+void College::Modify()   //修改职工信息
+{
+  cout<<"\n** 修改职工 **\n";
+  int No;
+  Person *p1,*p2;
+  cout<<"职工编号:";  cin>>No;
+  if(!Find1(No,&p1,&p2))
+  {
+    cout<<"指定的人员没有找到!\n";
+  }
+  else
+  {
+    p1->Print1();  //输出原来的职工信息(做提示)
+    cin>>*p1;  //输入新的职工信息(更新)
+    cout<<"修改完成!\n";
+  }
+}
+void College::Print2()    //输出职工信息
+{
+  cout<<"\n** 职工信息表 **\n";
+  Person *p=PL->next;
+  if(!p)
+  {
+    cout<<"无职工记录!\n";
+    return;
+  }
+  while(p)  //遍历链表，输出职工信息
+  {
+    p->Print1();
+    p=p->next;
+	cout<<"\n";
+  }
+}
+void College::Stat()     //综合统计
+{
+  cout<<"\n** 综合统计 **\n"; 
+  int n1,n2,n3,n4;//n1-在职,n2-党员,n3-女工,n4-高职称或高学历(博士)
+  n1=n2=n3=n4=0;
+  Person *p=PL->next;
+  cout<<"1-统计全部信息。2-统计部分信息:";
+  int n;
+  cin>>n;
+  if(n==1)
+  {
+	  while(p)
+	  {
+		  if(p->Type!=3&&p->Type!=4&&p->Type!=5)n1++;  //在职计数
+		  if(p->Party==1)n2++;  //党员计数
+		  if(p->Sex==1)n3++;  //女教工计数
+		  if(p->Study==6||p->TechPos==3)n4++;  //高级职称/高学历计数
+		  p=p->next;
+	  }
+	  //统计数据输出
+	  cout<<"在职人员人数:"<<n1<<endl;
+	  cout<<"中共党员人数:"<<n2<<endl;
+	  cout<<"女工人数:"<<n3<<endl;
+	  cout<<"高学历/高职称人数:"<<n4<<endl;
+  }
+  else
+  {
+	  int x;
+	  int y=0;
+	  cout<<"请选择统计对象: "<<endl;
+	  cout<<"  1 在职人数"<<endl;
+	  cout<<"  2 党员人数"<<endl;
+	  cout<<"  3 女工人数"<<endl;
+	  cout<<"  4 高学历高职称人数"<<endl;
+	  cin>>x;
+	  switch(x)
+	  {
+	  case 1: 
+		  {
+			  if(!p)
+				  cout<<"无人员信息\n";
+			  else {
+				  while(p)
+				  {
+					  if(p->Type!=3&&p->Type!=4&&p->Type!=5)
+						  y++;
+					  p=p->next;
+				  }
+				  cout<<"在职人数:"<<y<<endl;
+			  };
+			  break;
+	  case 2:
+		  {
+			  if(!p)
+				  cout<<"无人员信息\n";
+			  else
+			  {
+				  while(p)
+				  {
+					  if(p->Party==1)
+					  {
+						  y++;
+					  }
+					  p=p->next;
+				  }
+				  cout<<"中共党员人数:"<<y<<endl;
+			  }
+			  
+		  };
+		  break;
+	  case 3:
+		  {
+			  if(!p)
+				  cout<<"无人员信息\n";
+			  else
+			  {
+				  while(p)
+				  {
+					  if(p->Sex==1)
+					  {
+						  y++;
+					  }
+					  p=p->next;
+				  }
+			  }
+			  cout<<"女职工人数:"<<y<<endl;
+		  };
+		  break;
+	  case 4:
+		  {
+			  if(!p)
+				  cout<<"无人员信息"<<endl;
+			  else
+			  {
+				  while(p)
+				  {
+					  if(p->Study==6||p->TechPos==3)
+					  {
+						  y++;
+					  }
+					  p=p->next;
+				  }
+			  }
+			  cout<<"高学历高职称人数:"<<y<<endl;
+		  };
+		  break;
+		  }
+	  }
+
+  }
+}
+ 
+
+ 
+
+void College::Save()     //职工信息存盘
+{
+  ofstream f("Person.dat",ios::out|ios::binary);  //打开文件
+  //遍历输出至文件
+  Person *p=PL->next;
+  while(p)  
+  {
+    f.write((char *)p,sizeof(Person));
+    p=p->next;
+  }
+  f.close();  //关闭文件
+  cout<<"职工信息已经保存在Person.dat.\n";
+}
+void College::Load()     //职工信息装入
+{
+  //清除现有结点(保留头结点)
+  Clear();  
+  //打开文件
+  ifstream f("Person.dat",ios::in|ios::binary);
+  //建立结点，读数据
+  Person *p=PL; //尾结点指针
+  while(1)
+  {
+    Person *pa=new Person;  //建立新结点
+    f.read((char *)pa,sizeof(Person));  //读入数据
+    if(f)
+    {
+      p->next=pa;  //连接新结点
+      p=pa;  //更新尾结点指针
+    }
+    else
+    {
+      delete pa;//释放多余的内存。
+      break;
+    }
+  }
+   f.close();
+}
+void main()
+{
+  char ch;
+  College c;  //定义大学对象
+  //显示主菜单，接受选择，并分支调用大学类的相应功能的成员函数
+  do
+  {
+    cout<<"\n☆☆☆☆☆☆高校人事管理系统☆☆☆☆☆☆☆☆\n";
+    cout<<"☆1－----       增加职工信息          ----☆\n";
+    cout<<"☆2－----       删除职工信息          ----☆\n";
+    cout<<"☆3－----       修改职工信息          ----☆\n";
+    cout<<"☆4－----       查询职工信息          ----☆\n";
+    cout<<"☆5－----       输出职工信息          ----☆\n";
+    cout<<"☆6－----     综合统计职工信息        ----☆\n";
+    cout<<"☆7－----         数据存盘            ----☆\n";
+    cout<<"☆8－----         退出程序            ----☆\n";
+	cout<<"☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆\n";
+	cout<<"               请选择(1-8):";cin>>ch;       
+    switch(ch)
+    {
+      case '1':  c.Add();   break;
+      case '2':  c.Delete();break;
+      case '3':  c.Modify();break;
+	  case '4':{
+		  int i;
+		  cout<<"1-按编号查询。2-按姓名查询:";
+		  cin>>i;
+		  if(i==1)
+			  c.find1();
+		  if(i==2) 
+			  c.find2();
+			   }  
+		                  break;
+      case '5':  c.Print2(); break;
+      case '6':  c.Stat();   break;
+      case '7':  c.Save(); break;
+	  case '8':{
+		  cout<<"**************竭诚使用**************"<<endl;
+		  exit(0);}		 
+    }	
+	system("pause");
+	system("cls");
+  }while(ch!='8');
+}
+
